@@ -1,0 +1,62 @@
+@clean
+{
+        $(
+                "rm imed/* build/*"
+        );
+
+        !(
+                "finished cleaning"
+        );
+}
+
+@build
+{
+        %(
+                "src",
+                ".c",
+                "x86_64-elf-gcc -o imed/%.o -Iinclude -c src/% -ffreestanding -std=c11 -pedantic"
+        );
+        
+        %(
+                "src/io",
+                ".c",
+                "x86_64-elf-gcc -o imed/%.o -Iinclude -c src/io/% -ffreestanding -std=c11 -pedantic"
+        );
+        
+        %(
+                "src/libc",
+                ".c",
+                "x86_64-elf-gcc -o imed/%.o -Iinclude -c src/libc/% -ffreestanding -std=c11 -pedantic"
+        );
+        
+        %(
+                "src/int",
+                ".c",
+                "x86_64-elf-gcc -o imed/%.o -Iinclude -c src/int/% -ffreestanding -std=c11 -pedantic -mno-red-zone -mgeneral-regs-only"
+        );
+        
+        %(
+                "src/mem",
+                ".c",
+                "x86_64-elf-gcc -o imed/%.o -Iinclude -c src/mem/% -ffreestanding -std=c11 -pedantic"
+        );
+
+        $(
+                `this file rename is only here to save myself from the severe brainfrying of using gnu linker,
+                a bandaid fix is better than no fix at all`
+                "mv imed/main.c.o imed/00000000000000000main.o",
+                "x86_64-elf-gcc -Tlinker.ld -o build/tcf-kernel.bin imed/*.o -ffreestanding -nostdlib -lgcc"
+        );
+
+        !(
+                "finished building"
+        );
+}
+
+@main
+{
+        >(
+                clean,
+                build
+        );
+}
