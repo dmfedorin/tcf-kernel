@@ -20,25 +20,37 @@
         %(
                 "src/io",
                 ".c",
-                "x86_64-elf-gcc -o imed/%.o -Iinclude -c src/io/% -ffreestanding -std=c11 -pedantic"
+                "x86_64-elf-gcc -o imed/io-%.o -Iinclude -c src/io/% -ffreestanding -std=c11 -pedantic"
         );
         
         %(
                 "src/libc",
                 ".c",
-                "x86_64-elf-gcc -o imed/%.o -Iinclude -c src/libc/% -ffreestanding -std=c11 -pedantic"
+                "x86_64-elf-gcc -o imed/libc-%.o -Iinclude -c src/libc/% -ffreestanding -std=c11 -pedantic"
         );
         
         %(
                 "src/int",
                 ".c",
-                "x86_64-elf-gcc -o imed/%.o -Iinclude -c src/int/% -ffreestanding -std=c11 -pedantic -mno-red-zone -mgeneral-regs-only"
+                "x86_64-elf-gcc -o imed/int-%.o -Iinclude -c src/int/% -ffreestanding -std=c11 -pedantic -mno-red-zone -mgeneral-regs-only"
         );
         
         %(
                 "src/mem",
                 ".c",
-                "x86_64-elf-gcc -o imed/%.o -Iinclude -c src/mem/% -ffreestanding -std=c11 -pedantic"
+                "x86_64-elf-gcc -o imed/mem-%.o -Iinclude -c src/mem/% -ffreestanding -std=c11 -pedantic"
+        );
+        
+        %(
+                "src/util",
+                ".c",
+                "x86_64-elf-gcc -o imed/util-%.o -Iinclude -c src/util/% -ffreestanding -std=c11 -pedantic"
+        );
+        
+        %(
+                "src/mstate",
+                ".c",
+                "x86_64-elf-gcc -o imed/util-%.o -Iinclude -c src/mstate/% -ffreestanding -std=c11 -pedantic"
         );
 
         $(

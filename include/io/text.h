@@ -18,9 +18,6 @@ void
 clear_screen(void);
 
 void
-log_info(const char *msg);
-
-void
 set_text_back_stop_pos(int bsp);
 
 int
@@ -58,5 +55,8 @@ text_fg_color(void);
 /* scrolling will lose information */
 void
 scroll_text_down(void);
+
+void
+put_ptr(const void *ptr);
 
 #endif

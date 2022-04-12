@@ -1,6 +1,6 @@
 #include "int/pic.h"
 
-#include "io/text.h"
+#include "util/debug.h"
 #include "io/port.h"
 #include <stdint.h>
 

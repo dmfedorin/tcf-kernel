@@ -1,13 +1,13 @@
-#include <stdbool.h>
+__asm__("jmp main\n"); /* put first to ensure proper execution */
+
 #include "io/text.h"
 #include "kernel.h"
+#include "mem/pagealloc.h"
 
 void
 main(void)
 {
         clear_screen();
         init_kernel();
-        put_str("hello world\n");
-        while (true)
-                continue;
+        hang();
 }

@@ -83,14 +83,6 @@ clear_screen(void)
 }
 
 void
-log_info(const char *msg)
-{
-        put_str("log: ");
-        put_str(msg);
-        put_char('\n');
-}
-
-void
 set_text_back_stop_pos(int bsp)
 {
         back_stop_pos = bsp;
@@ -128,4 +120,10 @@ scroll_text_down(void)
                 TERM_WIDTH * TERM_HEIGHT * 2 + 1);
         cursor_pos -= TERM_WIDTH;
         back_stop_pos -= TERM_WIDTH;
+}
+
+void
+put_ptr(const void *ptr)
+{
+        put_hex(&ptr, sizeof(const void *));
 }

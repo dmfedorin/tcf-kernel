@@ -1,29 +1,71 @@
 #include "kernel.h"
 
 #include "mem/layout.h"
+#include "util/debug.h"
+#include "int/idt.h"
+#include <stdbool.h>
+#include "mstate/cpu.h"
 #include "io/text.h"
+#include "mem/pagealloc.h"
 
-cpu_regs
-get_cpu_regs(void)
+static inline void
+init_mem(void)
 {
-        cpu_regs regs;
-        __asm__("mov %%rax, %0\n"
-                "mov %%rbx, %1\n"
-                "mov %%rcx, %2\n"
-                "mov %%rdx, %3\n"
-                "mov %%rsp, %4\n"
-                "mov %%rbp, %5\n"
-                "mov %%rsi, %6\n"
-                "mov %%rdi, %7\n"
-                : "=m" (regs.rax), "=m" (regs.rbx), "=m" (regs.rcx),
-                  "=m" (regs.rdx), "=m" (regs.rsp), "=m" (regs.rbp),
-                  "=m" (regs.rsi), "=m" (regs.rdi));
-        return regs;
+        init_mem_layout();
+        init_page_alloc();
+        log_info("initialized memory");
+}
+
+static void
+init_ints(void)
+{
+        init_idt_default();
+        set_idt_entry(IDT_ENTRY_PAGE_FAULT, INT_DESC_GATE_TYPE_INT,
+                      page_fault_isr);
+        load_idt();
+        __asm__("sti\n");
+        log_info("initialized interrupts");
 }
 
 void
 init_kernel(void)
 {
-        init_mem_layout();
+        init_ints();
+        init_mem();
         log_info("initialized kernel");
+}
+
+void
+hang(void)
+{
+        while (true)
+        {
+                __asm__("cli\n"
+                        "hlt\n");
+        }
+}
+
+static const char *panic_code_names[] =
+{
+        "test",
+        "general",
+};
+
+void
+panic(panic_code code)
+{
+        cpu_state state = get_cpu_state(); /* some of the state will be
+                                            * altered due to the panic()
+                                            * function call
+                                            */
+        set_text_attr(TEXT_COLOR_WHITE, TEXT_COLOR_RED);
+        clear_screen();
+        put_str("an unrecoverable kernel error has occured\n"
+                "some information will be displayed to aid debugging\n"
+                "\n"
+                "panic code: ");
+        put_str(panic_code_names[code]);
+        put_str("\n\n");
+        print_cpu_state(&state);
+        hang();
 }

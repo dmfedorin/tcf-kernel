@@ -3,21 +3,15 @@
 
 #include <stdint.h>
 
-typedef struct
-{
-        uint64_t rip, cs, flags, rsp, ss;
-} int_frame;
+typedef struct int_frame int_frame;
 
 __attribute__((interrupt)) void
 default_isr(const int_frame *frame);
 
 __attribute__((interrupt)) void
-div_by_0_isr(const int_frame *frame);
-
-__attribute__((interrupt)) void
 debug_isr(const int_frame *frame);
 
 __attribute__((interrupt)) void
-keyboard_isr(const int_frame *frame);
+page_fault_isr(const int_frame *frame);
 
 #endif
