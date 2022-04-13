@@ -7,8 +7,6 @@
 #include <stddef.h>
 #include "util/debug.h"
 
-#define PAGE_SIZE 0x1000
-
 static const layout_entry *
 largest_free_mem_layout_entry(void)
 {

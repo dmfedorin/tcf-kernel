@@ -7,12 +7,16 @@
 #include "mstate/cpu.h"
 #include "io/text.h"
 #include "mem/pagealloc.h"
+#include "mem/paging.h"
 
-static inline void
+static void
 init_mem(void)
 {
         init_mem_layout();
         init_page_alloc();
+        init_paging();
+        identity_map_pages();
+        load_page_map();
         log_info("initialized memory");
 }
 
