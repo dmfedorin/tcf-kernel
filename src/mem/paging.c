@@ -20,14 +20,13 @@ typedef struct
 static page_index
 index_virtual_addr(const void *ptr)
 {
-        page_index ind =
+        return (page_index)
         {
                 .page = (uintptr_t)ptr >> 12 & 0x1ff,
                 .pt = (uintptr_t)ptr >> 21 & 0x1ff,
                 .pdt = (uintptr_t)ptr >> 30 & 0x1ff,
                 .pdpt = (uintptr_t)ptr >> 39 & 0x1ff,
         };
-        return ind;
 }
 
 /* not to be confused with page table entry */
