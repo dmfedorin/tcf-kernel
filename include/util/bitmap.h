@@ -3,18 +3,19 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <stddef.h>
 
 typedef struct
 {
         uint8_t *data;
-        int size_bits;
+        size_t size_bits;
 } bitmap;
 
 bool
-bitmap_bit(const bitmap *bm, int ind);
+bitmap_bit(const bitmap *bm, size_t ind);
 
 void
-set_bitmap_bit(bitmap *bm, int ind, bool state);
+set_bitmap_bit(bitmap *bm, size_t ind, bool state);
 
 void
 print_bitmap(const bitmap *bm);

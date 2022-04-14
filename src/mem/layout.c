@@ -53,11 +53,11 @@ init_mem_layout(void)
         log_info("initialized memory layout");
 }
 
-uint64_t
+size_t
 total_mem_layout_size(void)
 {
         const layout_entry *lay_ent = LAYOUT_PTR;
-        uint64_t total_size = 0;
+        size_t total_size = 0;
         for (; lay_ent->type != LAYOUT_ENTRY_TYPE_NULL; ++lay_ent)
                 total_size += lay_ent->size;
         return total_size;

@@ -4,11 +4,12 @@
 #define MAX_KERNEL_RESERVED_ADDR 0xfffff
 
 #include <stdint.h>
+#include <stddef.h>
 
 void
 init_mem_layout(void);
 
-uint64_t
+size_t
 total_mem_layout_size(void);
 
 typedef struct

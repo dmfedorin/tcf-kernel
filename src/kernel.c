@@ -3,7 +3,9 @@
 #include "mem/layout.h"
 #include "util/debug.h"
 #include "int/idt.h"
+#include "mem/stack.h"
 #include <stdbool.h>
+#include "mem/heap.h"
 #include "mstate/cpu.h"
 #include "io/text.h"
 #include "mem/pagealloc.h"
@@ -17,6 +19,8 @@ init_mem(void)
         init_paging();
         identity_map_pages((const void *)0x0, (const void *)0x2000000);
         load_page_map();
+        init_stack();
+        init_heap();
         log_info("initialized memory");
 }
 
