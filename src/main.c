@@ -9,11 +9,5 @@ main(void)
 {
         clear_screen();
         init_kernel();
-        for (int i = 0; i < 1000; ++i)
-        {
-                void *p = free_page();
-                put_ptr(p);
-                put_char('\n');
-        }
         hang();
 }

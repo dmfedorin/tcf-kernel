@@ -71,13 +71,16 @@ init_page_alloc(void)
         log_info("initialized page allocation");
 }
 
+int first_avl_page_bit = 0;
+
 void *
 free_page(void)
 {
-        for (int i = 0; i < page_bitmap.size_bits; ++i)
+        for (int i = first_avl_page_bit; i < page_bitmap.size_bits; ++i)
         {
                 if (!bitmap_bit(&page_bitmap, i))
                 {
+                        first_avl_page_bit = i + 1;
                         lock_page(bit_to_page(i));
                         return bit_to_page(i);
                 }
@@ -94,6 +97,8 @@ lock_page(const void *page)
 void
 unlock_page(const void *page)
 {
+        if (page_to_bit(page) < first_avl_page_bit)
+                first_avl_page_bit = page_to_bit(page);
         set_bitmap_bit(&page_bitmap, page_to_bit(page), false);
 }
 
