@@ -28,32 +28,12 @@ bitmap_size_pages(void)
         return (uintptr_t)page_bitmap.size_bits / 8 / PAGE_SIZE + 1;
 }
 
-static inline void *
-bit_to_page(size_t bit)
-{
-        return (void *)(uintptr_t)(bit * PAGE_SIZE);
-}
-
-static inline size_t
-page_to_bit(const void *page)
-{
-        return (uintptr_t)page / PAGE_SIZE;
-}
-
 static inline void
-lock_page_bitmap_pages(void)
+lock_reserved_pages(void)
 {
-        size_t i = page_to_bit(page_bitmap.data);
-        for (; i < page_to_bit(page_bitmap.data) + bitmap_size_pages(); ++i)
-                lock_page(bit_to_page(i));
-}
-
-static inline void
-lock_kernel_pages(void)
-{
-        size_t last_page = MAX_KERNEL_RESERVED_ADDR / PAGE_SIZE + 1;
-        for (size_t i = 0; i < last_page; ++i)
-                lock_page(bit_to_page(i));
+        lock_pages(page_bitmap.data, bitmap_size_pages()); /* bitmap */
+        lock_pages((const void *)0x0,
+                   MAX_KERNEL_RESERVED_ADDR / PAGE_SIZE + 1); /* kernel */
 }
 
 void
@@ -64,9 +44,7 @@ init_page_alloc(void)
                 .size_bits = total_mem_layout_size() / PAGE_SIZE + 1,
                 .data = (uint8_t *)largest_free_mem_layout_entry()->base,
         };
-        /* certain pages must not be given when a free one is requested */
-        lock_page_bitmap_pages();
-        lock_kernel_pages();
+        lock_reserved_pages();
         log_info("initialized page allocation");
 }
 
@@ -85,6 +63,18 @@ unlocked_pages_at_bit(size_t bit, size_t max_unlocked)
 }
 
 size_t first_avl_page_bit = 0;
+
+static inline void *
+bit_to_page(size_t bit)
+{
+        return (void *)(uintptr_t)(bit * PAGE_SIZE);
+}
+
+static inline size_t
+page_to_bit(const void *page)
+{
+        return (uintptr_t)page / PAGE_SIZE;
+}
 
 void *
 free_page(void)
