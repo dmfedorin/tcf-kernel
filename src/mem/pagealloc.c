@@ -6,6 +6,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include "util/debug.h"
+#include "libc/string.h"
 
 static const layout_entry *
 largest_free_mem_layout_entry(void)
@@ -94,4 +95,12 @@ void
 unlock_page(const void *page)
 {
         set_bitmap_bit(&page_bitmap, page_to_bit(page), false);
+}
+
+void *
+free_zero_page(void)
+{
+        void *page = free_page();
+        memset(page, '\0', PAGE_SIZE);
+        return page;
 }

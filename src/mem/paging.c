@@ -6,8 +6,9 @@
 #include "mem/pagealloc.h"
 #include "libc/string.h"
 #include "mem/layout.h"
+#include "io/text.h"
 
-#define PAGING_TABLE_ENTRIES 512
+#define MAX_TABLE_ENTRIES 512
 
 typedef struct
 {
@@ -17,95 +18,152 @@ typedef struct
         int page;
 } page_index;
 
+static void
+print_page_index(const page_index *ind)
+{
+        put_str("pdpt: ");
+        put_hex(&ind->pdpt, sizeof(int));
+        put_char('\n');
+        put_str("pdt: ");
+        put_hex(&ind->pdt, sizeof(int));
+        put_char('\n');
+        put_str("pt: ");
+        put_hex(&ind->pt, sizeof(int));
+        put_char('\n');
+        put_str("page: ");
+        put_hex(&ind->page, sizeof(int));
+        put_char('\n');
+}
+
 static page_index
-index_virtual_addr(const void *ptr)
+index_virtual_addr(const void *addr)
 {
         return (page_index)
         {
-                .page = (uintptr_t)ptr >> 12 & 0x1ff,
-                .pt = (uintptr_t)ptr >> 21 & 0x1ff,
-                .pdt = (uintptr_t)ptr >> 30 & 0x1ff,
-                .pdpt = (uintptr_t)ptr >> 39 & 0x1ff,
+                .page = (uintptr_t)addr >> 12 & 0x1ff,
+                .pt = (uintptr_t)addr >> 21 & 0x1ff,
+                .pdt = (uintptr_t)addr >> 30 & 0x1ff,
+                .pdpt = (uintptr_t)addr >> 39 & 0x1ff,
         };
 }
 
-/* not to be confused with page table entry */
+/* structure also works for pdpt entry and pml4 entry */
 typedef struct
 {
         bool present : 1;
         bool read_write : 1;
         bool user_super : 1;
         bool write_through : 1;
-        bool disable_cache : 1;
+        bool disable_caching : 1;
         bool accessed : 1;
-        bool _reserved_0 : 1;
+        bool available_0 : 1;
         bool large_pages : 1;
-        bool _reserved_1 : 1;
-        uint8_t available : 3;
+        uint8_t available_1 : 4;
         uint64_t addr : 52;
-} paging_table_entry;
+} page_dir_entry;
 
-/* not to be confused with page table */
+/* structure also works for pdpt and pml4 */
 typedef struct
 {
-        paging_table_entry entries[PAGING_TABLE_ENTRIES];
-} paging_table;
+        page_dir_entry entries[MAX_TABLE_ENTRIES];
+} page_dir;
 
-static paging_table *pml4;
+static page_dir *pml4;
 
 void
 init_paging(void)
 {
-        pml4 = free_page();
-        memset(pml4, '\0', PAGE_SIZE);
+        pml4 = free_zero_page();
         log_info("initialized paging");
 }
 
-static void
-setup_new_paging_table(paging_table *table)
+typedef struct
 {
-        paging_table *new_table = free_page();
-        memset(new_table, '\0', PAGE_SIZE);
-        *(paging_table_entry *)table = (paging_table_entry)
+        bool present : 1;
+        bool read_write : 1;
+        bool user_super : 1;
+        bool write_through : 1;
+        bool disable_caching : 1;
+        bool accessed : 1;
+        bool dirty : 1;
+        bool page_attr_table : 1;
+        bool global : 1;
+        uint8_t available : 3;
+        uint64_t addr : 52;
+} page_table_entry;
+
+typedef struct
+{
+        page_table_entry entries[MAX_TABLE_ENTRIES];
+} page_table;
+
+/* new page map structures are created if they do not already exist */
+static page_table_entry *
+get_page_table_entry_by_index(const page_index *ind)
+{
+        page_dir_entry *ent = &pml4->entries[ind->pdpt];
+        page_dir *pdpt;
+        if (!ent->present)
         {
-                .addr = (uintptr_t)new_table >> 12,
+                pdpt = free_zero_page();
+                *ent = (page_dir_entry)
+                {
+                        .addr = (uintptr_t)pdpt >> 12,
+                        .present = true,
+                        .read_write = true,
+                };
+        }
+        else
+                pdpt = (page_dir *)(uintptr_t)(ent->addr << 12);
+        ent = &pdpt->entries[ind->pdt];
+        page_dir *pdt;
+        if (!ent->present)
+        {
+                pdt = free_zero_page();
+                *ent = (page_dir_entry)
+                {
+                        .addr = (uintptr_t)pdt >> 12,
+                        .present = true,
+                        .read_write = true,
+                };
+        }
+        else
+                pdt = (page_dir *)(uintptr_t)(ent->addr << 12);
+        ent = &pdt->entries[ind->pt];
+        page_table *pt;
+        if (!ent->present)
+        {
+                pt = free_zero_page();
+                *ent = (page_dir_entry)
+                {
+                        .addr = (uintptr_t)pt >> 12,
+                        .present = true,
+                        .read_write = true,
+                };
+        }
+        else
+                pt = (page_table *)(uintptr_t)(ent->addr << 12);
+        return &pt->entries[ind->page];
+}
+
+void
+map_page(const void *virt_addr, const void *phys_addr)
+{
+        page_index ind = index_virtual_addr(virt_addr);
+        page_table_entry *page_ent = get_page_table_entry_by_index(&ind);
+        *page_ent = (page_table_entry)
+        {
+                .addr = (uintptr_t)phys_addr >> 12,
                 .present = true,
                 .read_write = true,
         };
 }
 
-static inline bool
-paging_table_exists(const paging_table *table)
-{
-        return ((const paging_table_entry *)table)->present;
-}
-
 void
-map_page(const void *virt_ptr, const void *phys_ptr)
+identity_map_pages(const void *first_page, const void *last_page)
 {
-        page_index page_ind = index_virtual_addr(virt_ptr);
-        paging_table *pdpt = (paging_table *)&pml4->entries[page_ind.pdpt];
-        if (!paging_table_exists(pdpt))
-                setup_new_paging_table(pdpt);
-        paging_table *pdt = (paging_table *)&pdpt->entries[page_ind.pdt];
-        if (!paging_table_exists(pdt))
-                setup_new_paging_table(pdt);
-        paging_table *pt = (paging_table *)&pdt->entries[page_ind.pt];
-        if (!paging_table_exists(pt))
-                setup_new_paging_table(pt);
-        pt->entries[page_ind.page] = (paging_table_entry)
-        {
-                .addr = (uintptr_t)phys_ptr >> 12,
-                .present = true,
-                .read_write = true,
-        };
-}
-
-void
-identity_map_pages(void)
-{
-        uintptr_t page = 0x0;
-        for (; page < 0x4000000; page += PAGE_SIZE)
+        uintptr_t page = (uintptr_t)first_page;
+        for (; page < (uintptr_t)last_page; page += PAGE_SIZE)
                 map_page((const void *)page, (const void *)page);
         log_info("identity mapped pages");
 }

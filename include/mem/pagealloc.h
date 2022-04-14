@@ -15,4 +15,7 @@ lock_page(const void *page);
 void
 unlock_page(const void *page);
 
+void *
+free_zero_page(void);
+
 #endif

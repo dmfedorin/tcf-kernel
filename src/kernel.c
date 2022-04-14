@@ -15,7 +15,7 @@ init_mem(void)
         init_mem_layout();
         init_page_alloc();
         init_paging();
-        identity_map_pages();
+        identity_map_pages((const void *)0x0, (const void *)0x2000000);
         load_page_map();
         log_info("initialized memory");
 }
